@@ -78,15 +78,28 @@ router.post('/add', (req, res) => {
 });
 
 // Search for gigs
-router.get('/search', (req, res) => {
-  let { term } = req.query;
+router.get('/search', async (req, res) => {
+  try {
+    let { term } = req.query;
+    term = term ? term.toLowerCase().trim() : '';
 
-  // Make lowercase
-  term = term.toLowerCase();
+    const gigs = await Gig.findAll({
+      where: {
+        technologies: {
+          [Op.iLike]: `%${term}%`
+        }
+      }
+    });
 
-  Gig.findAll({ where: { technologies: { [Op.like]: '%' + term + '%' } } })
-    .then(gigs => res.render('gigs', { gigs }))
-    .catch(err => res.render('error', {error: err}));
+    const plainGigs = gigs.map(gig => gig.toJSON());
+
+    res.render('gigs', {
+      gigs: plainGigs
+    });
+  } catch (err) {
+    console.log(err);
+    res.render('error', { error: err.message || err });
+  }
 });
 
 module.exports = router;
